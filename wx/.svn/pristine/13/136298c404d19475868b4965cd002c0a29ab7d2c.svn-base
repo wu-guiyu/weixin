@@ -1,0 +1,109 @@
+package com.bj.scb.controller;
+
+import com.alibaba.fastjson.JSON;
+import com.bj.scb.pojo.AdminCoupon;
+import com.bj.scb.pojo.UserCoupon;
+import com.bj.scb.service.AdminCouponService;
+import com.bj.scb.service.UserCouponService;
+import com.bj.scb.weixin.WxServiceImpl;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Controller
+@RequestMapping(value = "userCoupon", produces = "application/json; charset=utf-8")
+public class UserCouponController {
+
+	@Resource
+	UserCouponService userCouponService;
+
+	@Resource
+	AdminCouponService adminCouponService;
+
+
+	@RequestMapping(value = "findById")
+	@ResponseBody
+	public String findById(HttpServletRequest request) {
+		List<UserCoupon> list = userCouponService.queryAllRecordByUserId(request.getParameter("id"));
+		Map<String, Object> result = new HashMap<>();
+		if (list == null || list.size() == 0) {
+			result.put("status", "0");
+			result.put("message", "您当前还没有优惠券");
+		} else {
+			result.put("status", "1");
+			result.put("message", "查询成功");
+			result.put("data", list);
+		}
+		return JSON.toJSONString(result);
+	}
+
+	@RequestMapping(value = "deleteById")
+	@ResponseBody
+	public String deleteById(HttpServletRequest request) {
+		int ret = userCouponService.deleteById(request.getParameter("id"));
+		Map<String, Object> result = new HashMap<>();
+		if (ret > 0) {
+			result.put("status", "1");
+			result.put("message", "删除成功");
+		} else {
+			result.put("status", "0");
+			result.put("message", "删除失败");
+		}
+		return JSON.toJSONString(result);
+	}
+
+	@RequestMapping(value = "deleteByIdAndTimes")
+	@ResponseBody
+	public String deleteByIdAndTimes(HttpServletRequest request) {
+		int ret = userCouponService.deleteById(request.getParameter("id"),
+				Long.valueOf(request.getParameter("startTime")), Long.valueOf(request.getParameter("endTime")));
+		Map<String, Object> result = new HashMap<>();
+		if (ret > 0) {
+			result.put("status", "1");
+			result.put("message", "删除成功");
+		} else {
+			result.put("status", "0");
+			result.put("message", "删除失败");
+		}
+		return JSON.toJSONString(result);
+	}
+
+	/**
+	 * 给指定的人发送优惠劵
+	 * 
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping(value = "lssueSave")
+	@ResponseBody
+	public String lssueSave(HttpServletRequest request) {
+		String opind = request.getParameter("opind");
+		List<UserCoupon> list = userCouponService.queryAllRecordByUserId(opind);
+		Map<String, Object> result = new HashMap<>();
+		if (list == null || list.size() == 0) {
+			userCouponService.saveOrUpdate(opind);
+			result.put("status", "1");
+			result.put("message", "发送成功");
+		} else {
+			result.put("status", "0");
+			result.put("message", "当前用户已有优惠劵");
+		}
+		
+		return JSON.toJSONString(result);
+	}
+
+	public static void main(String[] args) {
+		String jsonString = "{cp_owner:'suben001',cp_amount:50,cp_name:'毕节审车优惠券'," + "cp_status:1" + "}";
+		// 将字符串解析成对象
+		UserCoupon userCoupon = JSON.parseObject(jsonString, UserCoupon.class);
+		System.out.println(JSON.toJSONString(userCoupon));
+	}
+
+}

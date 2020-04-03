@@ -1,0 +1,87 @@
+package com.bj.scb.service.impl;
+
+import com.alibaba.fastjson.JSON;
+import com.bj.scb.dao.impl.UserCouponDao;
+import com.bj.scb.pojo.AdminCoupon;
+import com.bj.scb.pojo.UserCoupon;
+import com.bj.scb.service.AdminCouponService;
+import com.bj.scb.service.UserCouponService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.Resource;
+
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@Transactional
+public class UserCouponServiceImpl implements UserCouponService {
+
+    @Resource
+    UserCouponDao userCouponDao;
+
+    @Resource
+    AdminCouponService adminCouponService;
+
+    @Override
+    public void saveOrUpdate(String userId) {
+        //查询当前有无已发布的优惠券
+        AdminCoupon adminCoupon = adminCouponService.findIsPublishCoupon();
+        if(adminCoupon == null){
+            return;
+        }
+        //将字符串解析成对象
+        UserCoupon userCoupon = new UserCoupon();
+        userCoupon.setCp_owner(userId);
+        userCoupon.setCp_amount(adminCoupon.getCp_amount());
+        userCoupon.setCp_name(adminCoupon.getCp_name());
+        userCoupon.setCp_start_time(adminCoupon.getCp_start_time());
+        userCoupon.setCp_end_time(adminCoupon.getCp_end_time());
+        userCoupon.setCp_status(1); //有效
+
+        userCouponDao.saveOrUpdate(userCoupon);
+    }
+
+    @Override
+    public int updateStatus() {
+        return userCouponDao.updateStatus();
+    }
+
+    @Override
+    public int deleteById(String id) {
+        if (StringUtils.isEmpty(id)) return 0;
+        return userCouponDao.deleteById(id);
+    }
+
+    @Override
+    public int deleteByIds(String[] ids) {
+        return userCouponDao.deleteByIds(ids);
+    }
+
+    @Override
+    public List<UserCoupon> queryAllRecordByUserId(String userId) {
+        if (StringUtils.isEmpty(userId)) return null;
+        //先执行一遍更新优惠券的有效期，即将失效的优惠券标识改成无效状态
+        updateStatus();
+        return userCouponDao.queryAllRecordByUserId(userId);
+    }
+
+	@Override
+	public int deleteById(String id, long startTime, long endTime) {
+		Timestamp timestamp1 = new Timestamp(startTime);
+		Timestamp timestamp2 = new Timestamp(endTime);
+		return userCouponDao.deleteById(id, timestamp1.toLocaleString(), timestamp2.toLocaleString());
+	}
+	
+	
+	public static void main(String[] args) {
+		Timestamp timestamp = new Timestamp(new Date().getTime());
+		System.out.println(timestamp.toLocaleString());
+		System.out.println(timestamp.toString());
+	}
+}
